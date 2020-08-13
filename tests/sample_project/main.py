@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
 import os
-from pyvuejs import Server
+from pyvuejs import Vue
 
-Server(os.path.dirname(os.path.abspath(__file__))).start()
+Vue.init(os.path.dirname(os.path.abspath(__file__))).start_standalone()

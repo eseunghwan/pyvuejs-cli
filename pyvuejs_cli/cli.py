@@ -15,15 +15,14 @@ def main():
 
     args = vars(parser.parse_args())
 
-    if args["job"] == "create-project":
+    if args["job"] == "create":
         template_zip = zipfile.ZipFile(os.path.join(__path__[0], "project_template.zip"), "r")
         template_zip.extractall(os.path.join(os.getcwd(), args["name"]))
     elif args["job"] == "start":
         con = sqlite3.connect(os.path.join(os.getcwd(), ".state"))
 
         if con.execute("select count(*) from `server`;").fetchone()[0] > 0:
-            already_port = con.execute("select `port` from `server`;").fetchone()[0]
-            raise CliException(f"Server started on {already_port}")
+            raise CliException(f"Server already started")
 
         server_pid = Popen([sys.executable, os.path.join(os.getcwd(), "main.py")]).pid
         con.execute(f"insert into `server` values ({server_pid})")
@@ -37,7 +36,10 @@ def main():
             raise CliException("Server is not started!")
 
         server_pid = con.execute("select `pid` from `server`;").fetchone()[0]
-        os.kill(server_pid, signal.SIGTERM)
+        try:
+            os.kill(server_pid, signal.SIGTERM)
+        except OSError:
+            pass
 
         con.execute("delete from `server`;")
         con.commit()

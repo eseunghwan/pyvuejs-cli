@@ -4,15 +4,15 @@ from pyvuejs import Vue
 class app():
     def data(self):
         return {
-            "text": "hello, pyvuejs!"
+            "text": "hello, vue3!"
         }
 
     def methods(self):
-        def change_text(self):
-            self.text = "I'm changed!"
+        def change_text(vue):
+            vue.text = "changed!"
 
         return {
             "change_text": change_text
         }
 
-__export__ = Vue.createApp(app).mount("#app")
+Vue.createApp(Vue.importVue("./app.vue"), app).mount("#main")

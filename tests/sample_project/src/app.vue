@@ -1,15 +1,15 @@
 <template>
-    <div id="app">
+    <div id="main">
         <p>{{ text }}</p>
         <button v-on:click="change_text">change text</button>
-        <br>
-        <label-box label="I'm component!"></label-box>
+        <label-box text1 = "123412341234"></label-box>
     </div>
 </template>
 
 <style>
-div#app {
+div#main {
     width: 100%;
     height:100%;
+    padding: 10px;
 }
 </style>
