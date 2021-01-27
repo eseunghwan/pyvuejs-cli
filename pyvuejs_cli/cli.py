@@ -13,9 +13,10 @@ def get_env_python(env_dir:str = None):
 def main():
     """Console script for pyvuejs_cli."""
     args = sys.argv[1:]
-    if len(args) == 0:
+    if len(args) == 0 or "help" in args[0].lower():
         print("""
 Available arguments
+- help
 - init [project_name(default = "./")]
 - serve
 """)
