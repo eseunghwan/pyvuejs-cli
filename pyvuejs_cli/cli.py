@@ -1,51 +1,56 @@
 # -*- coding: utf-8 -*-
-import os, sys, zipfile, importlib, signal
-from subprocess import Popen
-import argparse
-import sqlite3
-
+import os, sys, zipfile, platform
 from . import __path__
-from .handlers import CliException
+
+
+def get_env_python(env_dir:str = None):
+    env_dir = os.path.join(os.getcwd(), "env") if env_dir == None else env_dir
+    if platform.system() == "Windows":
+        return os.path.join(env_dir, "Scripts", "python")
+    else:
+        return os.path.join(env_dir, "bin", "python")
 
 def main():
     """Console script for pyvuejs_cli."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument("job", help = "cli command")
-    parser.add_argument("--name", default = "pyvuejs_project", help = "name of project to create")
+    args = sys.argv[1:]
+    if len(args) == 0:
+        print("""
+Available arguments
+- init [project_name(default = "./")]
+- serve
+""")
+        sys.exit()
 
-    args = vars(parser.parse_args())
+    kwargs = dict(enumerate(args))
+    job = kwargs.pop(0, "serve")
 
-    if args["job"] == "create":
-        template_zip = zipfile.ZipFile(os.path.join(__path__[0], "project_template.zip"), "r")
-        template_zip.extractall(os.path.join(os.getcwd(), args["name"]))
-    elif args["job"] == "start":
-        con = sqlite3.connect(os.path.join(os.getcwd(), ".state"))
+    if job == "init":
+        may_project_root = os.getcwd()
+        may_project_name = kwargs.pop(1, "./")
 
-        if con.execute("select count(*) from `server`;").fetchone()[0] > 0:
-            raise CliException(f"Server already started")
+        if may_project_name in ("./", ".\\", "."):
+            project_root = os.path.dirname(may_project_root)
+            project_name = os.path.basename(may_project_root)
+        else:
+            project_root = may_project_root
+            project_name = may_project_name
 
-        server_pid = Popen([sys.executable, os.path.join(os.getcwd(), "main.py")]).pid
-        con.execute(f"insert into `server` values ({server_pid})")
-        con.commit()
-        con.close()
+        template_zip = zipfile.ZipFile(os.path.join(__path__[0], "template.zip"), "r")
+        template_zip.extractall(os.path.join(project_root, project_name))
 
-    elif args["job"] == "stop":
-        con = sqlite3.connect(os.path.join(os.getcwd(), ".state"))
+        env_dir = os.path.join(project_root, project_name, "env")
+        if not os.path.exists(env_dir):
+            os.system(f"{sys.executable} -m pip install virtualenv")
+            os.system(f"{sys.executable} -m virtualenv {env_dir}")
+            os.system(f"{get_env_python(env_dir)} -m pip install pip pylint --upgrade")
+            os.system(f"{get_env_python(env_dir)} -m pip install pyvuejs")
+    elif job == "serve":
+        may_project_files = os.listdir(os.getcwd())
+        if not all(proj_file in may_project_files for proj_file in ("public", "src", "App.vue", "main.py")):
+            print("Current directory seems not pyvuejs project")
+            sys.exit()
 
-        if con.execute("select count(*) from `server`;").fetchone()[0] == 0:
-            raise CliException("Server is not started!")
-
-        server_pid = con.execute("select `pid` from `server`;").fetchone()[0]
-        try:
-            os.kill(server_pid, signal.SIGTERM)
-        except OSError:
-            pass
-
-        con.execute("delete from `server`;")
-        con.commit()
-        con.close()
-
-    return 0
+        os.system(f"{get_env_python()} ./main.py")
 
 
 if __name__ == "__main__":
